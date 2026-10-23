@@ -1,0 +1,937 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Polinomios paso a paso</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Nunito:wght@400;600;700;800&family=Press+Start+2P&display=swap">
+<style>
+/* Layout: cabecera 8 bits, pestañas y barra de ajustes; debajo, la tarjeta de simulación ocupa el resto de la ventana */
+:root{
+  --bg:#12101A; --panel:#1A1726; --stage:#15121F; --line:#2A2538; --line2:#3A3350;
+  --text:#F5F0FF; --muted:#9A92B0; --shadow:#0A0910;
+  --fucsia:#F472B6; --menta:#A8E6C8; --limon:#FEF08A; --ambar:#FBBF24;
+  --g0:#C4B5FD; --g1:#7DD3FC; --g2:#FDBA74; --g3:#FCA5A5; --g4:#BEF264; --g5:#E879F9; --g6:#5EEAD4;
+  --f-pixel:"Press Start 2P", ui-monospace, "Courier New", monospace;
+  --f-body:"Nunito", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --dur:650ms;
+  --fs:clamp(1.3rem, .95rem + 1.6vw, 2.25rem);
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--text);font-family:var(--f-body);font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased}
+[hidden]{display:none!important}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--limon);outline-offset:2px}
+
+.app{min-height:100%;max-width:1320px;margin:0 auto;display:flex;flex-direction:column;gap:12px;padding-block:14px 10px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+
+/* Cabecera */
+.top{display:flex;align-items:center;justify-content:space-between;gap:10px 16px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:12px}
+.brand svg{width:40px;height:auto;display:block}
+.brand-name{font-family:var(--f-pixel);font-size:12px;line-height:1.7;letter-spacing:.02em}
+.brand-name span{color:var(--fucsia)}
+.unit{font-family:var(--f-pixel);font-size:8px;color:var(--muted);letter-spacing:.08em}
+
+/* Pestañas 8 bits */
+.tabs{display:flex;gap:10px;overflow-x:auto;padding:2px 6px 8px 2px;scrollbar-width:thin}
+.tab{flex:none;font-family:var(--f-pixel);font-size:10px;line-height:1;color:var(--muted);background:var(--panel);border:2px solid var(--line);padding:12px 14px;box-shadow:4px 4px 0 var(--shadow);cursor:pointer;white-space:nowrap}
+.tab:hover{color:var(--text);border-color:var(--line2)}
+.tab[aria-selected="true"]{color:var(--limon);border-color:var(--limon);box-shadow:4px 4px 0 var(--fucsia)}
+
+/* Barra de ajustes */
+.bar{display:flex;flex-wrap:wrap;align-items:center;gap:12px 22px;padding:12px 16px;background:var(--panel);border:1px solid var(--line);border-radius:14px}
+.field{display:flex;align-items:center;gap:10px}
+.flabel{font-family:var(--f-pixel);font-size:8px;line-height:1.4;color:var(--muted);letter-spacing:.08em}
+.seg{display:flex}
+.seg button{font-family:var(--f-pixel);font-size:9px;line-height:1;padding:10px 11px;background:var(--bg);color:var(--muted);border:2px solid var(--line);margin-left:-2px;cursor:pointer}
+.seg button:first-child{margin-left:0}
+.seg button:hover{color:var(--text)}
+.seg button[aria-pressed="true"]{color:var(--limon);border-color:var(--limon);position:relative;z-index:1}
+.pxbtn{font-family:var(--f-pixel);font-size:9px;line-height:1;display:inline-flex;align-items:center;gap:9px;padding:10px 12px;background:var(--bg);color:var(--text);border:2px solid var(--line);box-shadow:3px 3px 0 var(--shadow);cursor:pointer;white-space:nowrap}
+.pxbtn:hover:not(:disabled){border-color:var(--muted)}
+.pxbtn:active:not(:disabled){transform:translate(2px,2px);box-shadow:1px 1px 0 var(--shadow)}
+.pxbtn:disabled{opacity:.35;cursor:default}
+.pxbtn.main{border-color:var(--limon);color:var(--limon)}
+.ico{width:12px;height:12px;flex:none;fill:var(--ambar)}
+.tog{cursor:pointer;user-select:none}
+.tog input{appearance:none;-webkit-appearance:none;width:18px;height:18px;margin:0;border:2px solid var(--line2);background:var(--bg);display:grid;place-items:center;cursor:pointer}
+.tog input::after{content:"";width:8px;height:8px;background:var(--limon);transform:scale(0);transition:transform .12s}
+.tog input:checked{border-color:var(--limon)}
+.tog input:checked::after{transform:scale(1)}
+.speed input{width:110px;accent-color:var(--fucsia)}
+.mono{font-family:var(--f-mono);font-size:.85rem;color:var(--text);font-variant-numeric:tabular-nums;min-width:3.4em}
+
+/* Tarjeta de simulación */
+.sim{flex:1 1 auto;min-height:440px;display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.exhead{display:flex;flex-wrap:wrap;align-items:center;gap:8px 18px;padding:14px 18px;border-bottom:1px solid var(--line)}
+.plabel{font-family:var(--f-pixel);font-size:8px;line-height:1.4;letter-spacing:.1em;color:var(--muted)}
+#stmt{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 22px;font-size:1.2rem;font-weight:700;min-width:0}
+#stmt .dl{color:var(--muted);font-weight:600;margin-right:.3em}
+#stmt .task{font-size:.95rem;font-weight:600;color:var(--muted)}
+#stmt .task b{color:var(--text)}
+.kind{margin-left:auto;font-family:var(--f-mono);font-size:.78rem;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:3px 10px}
+
+.stage{position:relative;flex:1 1 auto;min-height:230px;overflow:auto;background:var(--stage)}
+#rows{min-height:100%;display:flex;flex-direction:column;justify-content:center;gap:.7rem;padding:1rem 1rem 1.4rem}
+.row{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;column-gap:.1em;row-gap:1.8em;padding-top:2.3em}
+.row.notes{padding-top:0;column-gap:1em;row-gap:.5em}
+#arrows{position:absolute;left:0;top:0;pointer-events:none;overflow:visible}
+#ghosts{position:absolute;left:0;top:0;width:0;height:0;pointer-events:none}
+.ghost{position:absolute!important;margin:0!important;pointer-events:none}
+
+/* Tokens */
+.tk{position:relative;display:inline-flex;align-items:center;white-space:nowrap}
+.tk-term,.tk-op,.tk-par,.tk-lab{font-size:var(--fs);font-weight:700;line-height:1.25}
+.tk-term{padding:.06em .2em;border:2px solid transparent;border-radius:.42em}
+.tk-op{padding:0 .22em;color:var(--muted);font-weight:600}
+.tk-par{color:var(--muted);font-weight:400;padding:0 .03em}
+.tk-lab{color:var(--muted);font-weight:600;font-size:calc(var(--fs) * .62);margin-right:.5em}
+.tk-note{font-family:var(--f-mono);font-size:clamp(.8rem,.72rem + .3vw,.98rem);line-height:1.6;padding:.3em .7em;border:1px solid var(--line);border-radius:9px;background:var(--panel);white-space:normal;flex-wrap:wrap;justify-content:center}
+.nlab{font-family:var(--f-pixel);font-size:.5rem;color:var(--muted);margin-right:1em;letter-spacing:.06em;text-transform:uppercase}
+.gapn{display:inline-block;width:1.4em}
+sup{font-size:.6em;line-height:0;vertical-align:.8em}
+.fr{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;font-size:.6em;line-height:1.08;margin:0 .1em}
+.fr>span:first-child{border-bottom:.09em solid currentColor;padding:0 .14em}
+.sg{display:inline-block}
+.sg.mid{margin:0 .3em}
+.pw{color:var(--muted);font-weight:400}
+
+.col.g0{color:var(--g0)} .col.g1{color:var(--g1)} .col.g2{color:var(--g2)} .col.g3{color:var(--g3)}
+.col.g4{color:var(--g4)} .col.g5{color:var(--g5)} .col.g6{color:var(--g6)}
+.h-co .co{color:var(--fucsia)}
+.h-li .li{color:var(--menta)}
+.act{border-color:var(--limon)!important;box-shadow:0 0 0 .12em rgba(254,240,138,.10),0 0 1.1em rgba(254,240,138,.16)}
+.tk-op.act,.tk-par.act{color:var(--limon);box-shadow:none}
+.dim{opacity:.3}
+.fac{color:var(--limon)}
+.res{box-shadow:inset 0 -.12em 0 var(--menta)}
+.flip .sg{color:var(--limon);animation:sflip var(--dur) ease both}
+@keyframes sflip{0%{transform:rotateX(0) scale(1)}50%{transform:rotateX(90deg) scale(1.4)}100%{transform:rotateX(0) scale(1)}}
+.badge{position:absolute;left:50%;top:-1.25em;margin-left:-.75em;width:1.5em;height:1.5em;display:grid;place-items:center;font-family:var(--f-mono);font-size:.48em;font-weight:600;color:var(--limon);background:var(--stage);border:1.5px solid var(--limon);border-radius:999px;animation:badgeIn .45s calc(var(--i) * 170ms + 150ms) both}
+@keyframes badgeIn{from{opacity:0;transform:translateY(-.8em) scale(.6)}to{opacity:1;transform:none}}
+.lim{color:var(--limon);font-weight:600}
+.okm{color:var(--menta);font-weight:600}
+.xfr{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;line-height:1.3;margin:0 .25em}
+.xfr>span:first-child{border-bottom:1px solid currentColor;padding:0 .25em}
+.st{position:relative;display:inline-block}
+.st::after{content:"";position:absolute;left:-15%;right:-15%;top:52%;height:2px;background:var(--fucsia);transform:scaleX(0) rotate(-24deg);transform-origin:left center;animation:strike .3s calc(var(--dur) + var(--i) * 150ms) forwards}
+@keyframes strike{to{transform:scaleX(1) rotate(-24deg)}}
+
+/* Leyenda y explicación */
+.legend{display:flex;flex-wrap:wrap;align-items:center;gap:6px 16px;padding:8px 18px;border-top:1px solid var(--line);font-family:var(--f-mono);font-size:.78rem;color:var(--muted);min-height:2.5em}
+.lg{display:inline-flex;align-items:center;gap:7px}
+.lg::before{content:"";width:9px;height:9px;background:currentColor;flex:none}
+.lg.c-fu{color:var(--fucsia)} .lg.c-me{color:var(--menta)} .lg.c-li{color:var(--limon)}
+.lg.g0{color:var(--g0)} .lg.g1{color:var(--g1)} .lg.g2{color:var(--g2)} .lg.g3{color:var(--g3)} .lg.g4{color:var(--g4)} .lg.g5{color:var(--g5)} .lg.g6{color:var(--g6)}
+.lsep{width:1px;height:14px;background:var(--line)}
+.expl{display:flex;gap:16px;align-items:flex-start;padding:14px 18px;border-top:1px solid var(--line);min-height:5em}
+#stepLbl{flex:none;padding-top:.5em;min-width:7.5em}
+#text{margin:0;max-width:78ch;font-size:1.03rem;text-wrap:pretty}
+#text b{font-weight:800}
+.m{font-family:var(--f-mono);font-size:.9em;white-space:nowrap}
+
+.ctrl{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:12px 18px 16px;border-top:1px solid var(--line)}
+.prog{display:flex;flex-wrap:wrap;gap:4px;margin-left:auto;max-width:100%}
+.prog i{display:block;width:10px;height:10px;background:var(--line)}
+.prog i.done{background:var(--muted)}
+.prog i.now{background:var(--limon)}
+
+.prac{display:flex;flex-direction:column;gap:12px;padding:14px 18px 18px;border-top:1px solid var(--line)}
+.ansrow{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.ansrow input{font-family:var(--f-mono);font-size:1.05rem;background:var(--bg);color:var(--text);border:2px solid var(--line);border-radius:10px;padding:10px 12px;min-width:0;flex:1 1 200px}
+.ansrow input.short{flex:0 1 160px}
+.ansrow input:focus{outline:none;border-color:var(--limon)}
+.eqs{font-size:1.3rem;font-weight:700;color:var(--muted)}
+.keys{display:flex;flex-wrap:wrap;gap:6px}
+.key{font-family:var(--f-mono);font-size:1rem;min-width:2.6em;padding:6px 10px;background:var(--bg);color:var(--text);border:2px solid var(--line);box-shadow:2px 2px 0 var(--shadow);cursor:pointer}
+.key:hover{border-color:var(--muted)}
+.key:active{transform:translate(1px,1px);box-shadow:1px 1px 0 var(--shadow)}
+.pbtns{display:flex;flex-wrap:wrap;gap:10px}
+.fb{margin:0;font-weight:700;min-height:1.5em}
+.fb.ok{color:var(--menta)} .fb.no{color:var(--fucsia)}
+.fb span{color:var(--text);font-weight:600}
+
+.foot{display:flex;flex-wrap:wrap;justify-content:space-between;gap:6px 16px;font-size:.8rem;color:var(--muted);padding-top:2px}
+.foot a{color:var(--muted);text-decoration-color:var(--line2);text-underline-offset:3px}
+.foot a:hover{color:var(--text)}
+
+@media (max-width:640px){
+  .expl{flex-direction:column;gap:6px}
+  #stepLbl{padding-top:0}
+  .kind{margin-left:0}
+  .prog{margin-left:0;width:100%}
+}
+@media (prefers-reduced-motion:reduce){
+  .flip .sg,.badge,.st::after{animation-duration:1ms!important;animation-delay:0s!important}
+}
+</style>
+<!--BODY-->
+<div class="app">
+  <header class="top">
+    <div class="brand"><span id="logo"></span><div class="brand-name">CIENCIAS APLICADAS <span>FPB</span></div></div>
+    <div class="unit">UD3 · ÁLGEBRA · POLINOMIOS</div>
+  </header>
+
+  <nav class="tabs" role="tablist" aria-label="Operación">
+    <button class="tab" role="tab" data-op="suma">SUMA</button>
+    <button class="tab" role="tab" data-op="resta">RESTA</button>
+    <button class="tab" role="tab" data-op="mult">MULTIPLICACIÓN</button>
+    <button class="tab" role="tab" data-op="div">DIVISIÓN</button>
+    <button class="tab" role="tab" data-op="fact">FACTORIZACIÓN</button>
+  </nav>
+
+  <section class="bar" aria-label="Ajustes">
+    <div class="field"><span class="flabel">MODO</span>
+      <div class="seg" id="segMode"><button data-v="demo">DEMOSTRACIÓN</button><button data-v="prac">PRÁCTICA</button></div></div>
+    <div class="field"><span class="flabel">NIVEL</span>
+      <div class="seg" id="segLevel"><button data-v="facil">FÁCIL</button><button data-v="medio">MEDIO</button><button data-v="dificil">DIFÍCIL</button></div></div>
+    <button class="pxbtn main" id="btnNew"><span data-ico="dice"></span>NUEVO EJERCICIO</button>
+    <label class="field tog" id="togExp"><input type="checkbox" id="chkExp"><span class="flabel">DESPLEGAR POTENCIAS</span></label>
+    <div class="field speed"><label class="flabel" for="spd">VELOCIDAD</label><input type="range" id="spd" min="0.5" max="3" step="0.25" value="1"><span class="mono" id="spdV">1,00×</span></div>
+  </section>
+
+  <main class="sim">
+    <div class="exhead"><span class="plabel">EJERCICIO</span><div id="stmt"></div><span class="kind" id="kind"></span></div>
+    <div class="stage" id="stage"><div id="rows"></div><svg id="arrows" width="0" height="0" aria-hidden="true"></svg><div id="ghosts"></div></div>
+    <div class="legend" id="legend"></div>
+    <div class="expl"><span class="plabel" id="stepLbl"></span><p id="text" aria-live="polite"></p></div>
+    <div class="ctrl" id="ctrl">
+      <button class="pxbtn" id="btnPrev"><span data-ico="prev"></span>ANTERIOR</button>
+      <button class="pxbtn main" id="btnPlay"><span data-ico="play"></span><span id="playLbl">REPRODUCIR</span></button>
+      <button class="pxbtn" id="btnNext">SIGUIENTE<span data-ico="play"></span></button>
+      <button class="pxbtn" id="btnReset"><span data-ico="reset"></span>INICIO</button>
+      <div class="prog" id="prog" aria-hidden="true"></div>
+    </div>
+    <div class="prac" id="prac" hidden>
+      <div class="plabel">TU RESPUESTA</div>
+      <div class="ansrow" id="ansPoly"><span class="eqs">=</span><input id="ans" type="text" autocomplete="off" spellcheck="false" placeholder="Ej.: 3x^2 − 5x + 1" aria-label="Resultado"></div>
+      <div class="ansrow" id="ansFact" hidden><input id="fac" class="short" type="text" autocomplete="off" spellcheck="false" placeholder="factor común" aria-label="Factor común"><span class="eqs">· (</span><input id="inn" type="text" autocomplete="off" spellcheck="false" placeholder="lo que queda dentro" aria-label="Lo que queda dentro del paréntesis"><span class="eqs">)</span></div>
+      <div class="keys" id="keys"></div>
+      <div class="pbtns">
+        <button class="pxbtn main" id="btnCheck"><span data-ico="check"></span>COMPROBAR</button>
+        <button class="pxbtn" id="btnShow"><span data-ico="play"></span>VER SOLUCIÓN</button>
+        <button class="pxbtn" id="btnAgain" hidden><span data-ico="dice"></span>OTRO EJERCICIO</button>
+      </div>
+      <p class="fb" id="fb" role="status"></p>
+    </div>
+  </main>
+
+  <footer class="foot">
+    <span>© Sara G.M.</span>
+    <span>Licencia <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.es" target="_blank" rel="noopener">CC BY-NC-SA 4.0</a></span>
+  </footer>
+</div>
+
+<script>
+"use strict";
+// ==LOGIC==
+/* ---------- Fracciones ---------- */
+const gcd=(a,b)=>{a=Math.abs(a);b=Math.abs(b);while(b){const t=a%b;a=b;b=t}return a||1};
+class F{
+  constructor(n,d=1){if(d<0){n=-n;d=-d}const g=gcd(n,d);this.n=n/g;this.d=d/g;if(this.n===0){this.n=0;this.d=1}}
+  add(o){return new F(this.n*o.d+o.n*this.d,this.d*o.d)}
+  mul(o){return new F(this.n*o.n,this.d*o.d)}
+  div(o){return new F(this.n*o.d,this.d*o.n)}
+  neg(){return new F(-this.n,this.d)}
+  abs(){return new F(Math.abs(this.n),this.d)}
+  get zero(){return this.n===0}
+  get int(){return this.d===1}
+  get one(){return this.n===1&&this.d===1}
+  eq(o){return this.n===o.n&&this.d===o.d}
+}
+const f=x=>x instanceof F?x:new F(x);
+
+/* ---------- Formato ---------- */
+const MINUS='−';
+const b=s=>`<b>${s}</b>`;
+const m=s=>`<span class="m">${s}</span>`;
+const sup=x=>`<sup>${x}</sup>`;
+const fracH=(n,d)=>`<span class="fr"><span>${n}</span><span>${d}</span></span>`;
+const numH=a=>a.int?`${a.n}`:fracH(a.n,a.d);
+const numS=(c,paren=false)=>{const s=(c.n<0?MINUS:'')+numH(c.abs());return paren&&c.n<0?`(${s})`:s};
+const litH=(e,show1=false)=>e===0?'':`x${(e>1||show1)?sup(e):''}`;
+function termInner(c,e,o={}){
+  const lead=o.leading!==false, neg=c.n<0, a=c.abs();
+  let sign='';
+  if(!lead) sign=`<span class="sg mid">${neg?MINUS:'+'}</span>`;
+  else if(neg) sign=`<span class="sg">${MINUS}</span>`;
+  const showCo=e===0||!a.one||o.showOne;
+  const co=showCo?`<span class="co">${numH(a)}</span>`:'';
+  const li=e>0?`<span class="li">x${(e>1||o.showExp1)?`<sup class="ex">${e}</sup>`:''}</span>`:'';
+  let body=sign+co+li;
+  if(o.wrapNeg&&neg&&lead) body=`<span class="pw">(</span>${body}<span class="pw">)</span>`;
+  return body;
+}
+const termL=(c,e,o={})=>termInner(c,e,{...o,leading:true});
+const termS=(c,e)=>(c.n<0?MINUS:'+')+termInner(c.abs(),e);
+const polyH=ts=>ts.length?ts.map((t,i)=>termInner(t.c,t.e,{leading:i===0})).join(''):'0';
+const listY=a=>a.length<=1?(a[0]||''):a.slice(0,-1).join(', ')+' y '+a[a.length-1];
+const NAMES=['','monomio','binomio','trinomio','polinomio de 4 términos'];
+
+/* ---------- Azar y polinomios ---------- */
+const R=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
+const nz=C=>{let v;do{v=R(-C,C)}while(v===0);return v};
+const sgn=()=>Math.random()<.35?-1:1;
+const range=(a,b)=>Array.from({length:b-a+1},(_,i)=>a+i);
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+const sample=(a,n)=>shuffle(a).slice(0,n);
+const desc=(x,y)=>y-x;
+const T=(c,e)=>({c:f(c),e});
+const toMap=ts=>{const mp=new Map();ts.forEach(t=>mp.set(t.e,(mp.get(t.e)||new F(0)).add(t.c)));for(const [k,v] of mp) if(v.zero) mp.delete(k);return mp};
+const fromMap=mp=>[...mp.entries()].sort((a,b)=>b[0]-a[0]).map(([e,c])=>({c,e}));
+const addP=(A,B)=>fromMap(toMap([...A,...B]));
+const mulP=(A,B)=>fromMap(toMap(A.flatMap(a=>B.map(x=>({c:a.c.mul(x.c),e:a.e+x.e})))));
+const eqMap=(a,b2)=>a.size===b2.size&&[...a].every(([e,c])=>b2.has(e)&&b2.get(e).eq(c));
+const sorted=ts=>ts.every((t,i)=>i===0||ts[i-1].e>t.e);
+
+/* ---------- Generadores ---------- */
+function genAddSub(level,resta){
+  const cfg={facil:{maxE:2,nP:2,nQ:2,C:6,sh:1,shuf:false},medio:{maxE:3,nP:3,nQ:3,C:9,sh:2,shuf:true},dificil:{maxE:4,nP:4,nQ:3,C:12,sh:2,shuf:true}}[level];
+  for(let k=0;k<500;k++){
+    const all=range(0,cfg.maxE);
+    const eP=sample(all,cfg.nP), sh=sample(eP,cfg.sh);
+    const eQ=sh.concat(sample(all.filter(e=>!sh.includes(e)),cfg.nQ-sh.length));
+    let P=eP.map(e=>T(nz(cfg.C),e)), Q=eQ.map(e=>T(nz(cfg.C),e));
+    if(cfg.shuf){P=shuffle(P);Q=shuffle(Q);if(sorted(P)&&sorted(Q))continue}
+    else{P.sort((x,y)=>y.e-x.e);Q.sort((x,y)=>y.e-x.e)}
+    if(resta&&!(Q.some(t=>t.c.n<0)&&Q.some(t=>t.c.n>0)))continue;
+    const ans=addP(P,resta?Q.map(t=>({c:t.c.neg(),e:t.e})):Q);
+    if(!ans.length)continue;
+    if(level==='facil'&&ans.length<toMap([...P,...Q.map(t=>({c:f(1),e:t.e}))]).size)continue;
+    return {P,Q,ans,kind:`${NAMES[P.length]} y ${NAMES[Q.length]}`};
+  }
+}
+function genMul(level){
+  for(let k=0;k<500;k++){
+    if(level==='facil'){
+      const a=T(nz(9),R(0,4)),c=T(nz(9),R(0,4));
+      if(a.e===0&&c.e===0)continue;
+      return {A:[a],B:[c],ans:mulP([a],[c]),kind:'monomio · monomio'};
+    }
+    if(level==='medio'){
+      const a=T(nz(6),R(1,3)),n=R(2,3);
+      const B=sample(range(0,3),n).sort(desc).map(e=>T(nz(7),e));
+      return {A:[a],B,ans:mulP([a],B),kind:`monomio · ${NAMES[n]}`};
+    }
+    const A=sample(range(0,2),2).sort(desc).map(e=>T(nz(5),e)),n=R(2,3);
+    const B=sample(range(0,3),n).sort(desc).map(e=>T(nz(5),e));
+    const ex=A.flatMap(a=>B.map(x=>a.e+x.e));
+    if(new Set(ex).size===ex.length)continue;
+    const ans=mulP(A,B);if(!ans.length)continue;
+    return {A,B,ans,kind:`binomio · ${NAMES[n]}`};
+  }
+}
+function genDiv(level){
+  for(let k=0;k<500;k++){
+    let P,D;
+    if(level==='facil'){
+      D=T(sgn()*R(2,6),R(1,3));const q=T(nz(8),R(0,3));
+      P=[{c:q.c.mul(D.c),e:q.e+D.e}];
+    }else if(level==='medio'){
+      D=T(sgn()*R(2,5),R(1,2));const n=R(2,3);
+      P=sample(range(0,3),n).sort(desc).map(e=>T(nz(6),e)).map(q=>({c:q.c.mul(D.c),e:q.e+D.e}));
+    }else{
+      D=T(sgn()*R(2,6),R(1,3));
+      P=sample(range(D.e,D.e+3),3).sort(desc).map(e=>T(nz(15),e));
+      if(!P.some(t=>!t.c.div(D.c).int))continue;
+    }
+    return {P,D,ans:P.map(t=>({c:t.c.div(D.c),e:t.e-D.e})),kind:`${NAMES[P.length]} : monomio`};
+  }
+}
+function genFactor(level){
+  for(let k=0;k<500;k++){
+    let K,M,n,C,maxI;
+    if(level==='facil'){const t=R(0,2);if(t===0){K=R(2,6);M=0}else if(t===1){K=1;M=R(1,2)}else{K=R(2,4);M=1}n=2;C=5;maxI=2}
+    else if(level==='medio'){K=R(2,6);M=R(1,3);n=R(2,3);C=6;maxI=2}
+    else{K=R(2,10);M=R(1,3);n=R(3,4);C=7;maxI=3}
+    const exps=[0,...sample(range(1,maxI),n-1)].sort(desc);
+    const inner=exps.map(e=>T(nz(C),e));
+    if(inner.map(t=>Math.abs(t.c.n)).reduce(gcd)!==1)continue;
+    if(level!=='dificil'&&inner[0].c.n<0)inner[0].c=inner[0].c.neg();
+    const P=inner.map(t=>({c:t.c.mul(f(K)),e:t.e+M}));
+    return {P,k:K,m:M,inner,kind:NAMES[n]};
+  }
+}
+
+/* ---------- Constructores de tokens ---------- */
+const tT=(id,t,o={})=>({k:'term',id,c:t.c,e:t.e,...o});
+const tO=(id,s,o={})=>({k:'op',id,s,...o});
+const tP=(id,s,o={})=>({k:'par',id,s,...o});
+const tL=(id,html,o={})=>({k:'lab',id,html,...o});
+const tN=(id,html,o={})=>({k:'note',id,html,...o});
+const row=(items,cls='')=>({items,cls});
+const notes=(...ns)=>row(ns.filter(Boolean),'notes');
+const ROLES={roles:true};
+const hlAll=t=>({...t,act:true,hl:'co li',showOne:true,showExp1:true});
+const dm=t=>({...t,dim:true});
+
+function signRule(c1,c2,op='·'){
+  const s1=c1.n<0,s2=c2.n<0;
+  if(!s1&&!s2)return '';
+  return `Regla de los signos: ${m(`${s1?MINUS:'+'} ${op} ${s2?MINUS:'+'} = ${s1!==s2?MINUS:'+'}`)}.`;
+}
+const xs=n=>n===1?'x':`(${Array(n).fill('x').join('·')})`;
+function expMulNote(e1,e2,ex){
+  if(e1===0&&e2===0)return 'no hay x';
+  if(e1===0||e2===0)return `solo un factor lleva x → ${litH(e1||e2,true)}`;
+  let s=`x${sup(e1)} · x${sup(e2)} = `;
+  if(ex&&e1+e2<=10)s+=`${xs(e1)}·${xs(e2)} = `;
+  return s+`x${sup(`${e1}+${e2}`)} = x${sup(e1+e2)}`;
+}
+function expMulText(e1,e2){
+  if(e1===0&&e2===0)return 'Ninguno de los dos lleva x: el resultado es solo un número.';
+  if(e1===0||e2===0)return `Solo uno de los dos lleva ${m('x')}: la parte literal ${m(litH(e1||e2))} pasa igual al resultado.`;
+  return `Multiplicamos las partes literales. Son potencias de la misma base, así que ${b('se suman los exponentes')}: ${m(`${e1} + ${e2} = ${e1+e2}`)}.${(e1===1||e2===1)?` Recuerda que ${m('x')} es ${m('x'+sup(1))}.`:''}`;
+}
+const xsS=(n,k)=>Array.from({length:n},(_,i)=>`<span class="${i<k?'st':''}" style="--i:${i}">x</span>`).join('·');
+const xfrac=(e1,e2)=>`<span class="xfr"><span>${xsS(e1,e2)}</span><span>${xsS(e2,e2)}</span></span>`;
+function expDivNote(e1,e2,ex){
+  let s=`x${sup(e1)} : x${sup(e2)} = `;
+  if(ex&&e1<=10)s+=`${xfrac(e1,e2)} = `;
+  s+=`x${sup(`${e1}${MINUS}${e2}`)} = `;
+  return s+(e1===e2?`x${sup(0)} = 1`:`x${sup(e1-e2)}`);
+}
+function coefDivNote(c1,c2){
+  const q=c1.div(c2);let s=`${numS(c1)} : ${numS(c2,true)} = `;
+  if(!q.int){const n1=Math.abs(c1.n),n2=Math.abs(c2.n),sg=(c1.n<0)!==(c2.n<0)?MINUS:'';if(gcd(n1,n2)>1)s+=`${sg}${fracH(n1,n2)} = `}
+  return s+numS(q);
+}
+
+/* ---------- Agrupar términos semejantes (común) ---------- */
+function combineFlow(S,terms,ctx={}){
+  const pre=ctx.pre||[],lead=ctx.lead||[];
+  const mk=(items,extra=[])=>({rows:[...pre,row([...lead,...items]),...extra]});
+  const exps=[...new Set(terms.map(t=>t.e))].sort(desc);
+  const cnt=e=>terms.filter(t=>t.e===e).length;
+  const like=exps.filter(e=>cnt(e)>1),hasLike=like.length>0;
+  const leg=hasLike?{deg:exps}:null;
+  let state=terms.map(t=>({k:'term',id:t.id,c:t.c,e:t.e,col:hasLike}));
+  if(hasLike){
+    S.push([{...mk(state),legend:leg,text:`Buscamos los ${b('términos semejantes')}: los que tienen la misma parte literal (la ${m('x')} con el mismo exponente). Cada familia de semejantes tiene su color.`}]);
+  }else{
+    S.push([{...mk(state),text:ctx.noLike||'No hay términos semejantes: no hay nada que agrupar.'}]);
+  }
+  const ord=[...state].sort((x,y)=>y.e-x.e);
+  if(!ord.every((t,i)=>t.id===state[i].id)){
+    state=ord;
+    S.push([{...mk(state),legend:leg,text:hasLike?'Reordenamos: juntamos los términos semejantes y los colocamos de mayor a menor grado.':'Ordenamos los términos de mayor a menor grado.'}]);
+  }
+  for(const e of like){
+    const g=state.filter(t=>t.e===e),ids=g.map(t=>t.id);
+    const sum=g.reduce((s,t)=>s.add(t.c),new F(0));
+    const expr=g.map((t,i)=>numS(t.c,i>0)).join(' + ')+' = '+numS(sum);
+    const nid='ng'+e,name=e===0?'los números':`los términos en ${m(litH(e))}`;
+    S.push([{...mk(state.map(t=>ids.includes(t.id)?{...t,act:true,hl:'co li',showOne:true}:dm(t)),[notes(tN(nid,`<span class="nlab">${e===0?'números':'en '+litH(e)}</span>${expr}`))]),legend:{...leg,roles:true},
+      text:e===0?`Sumamos los números: ${m(expr)}.`:`Sumamos los coeficientes de ${name}: ${m(expr)}. La parte literal ${m(litH(e))} ${b('no cambia')}.`}]);
+    if(sum.zero){
+      state=state.filter(t=>!ids.includes(t.id));
+      S.push([{...mk(state.length?state:[tO('zero','0')]),legend:leg,text:`El resultado es ${m('0')}: ${name} se anulan y desaparecen.`}]);
+    }else{
+      const nt={k:'term',id:ids[0],c:sum,e,col:true,act:true,absorb:[...ids.slice(1),nid]};
+      state=state.flatMap(t=>t.id===ids[0]?[nt]:ids.includes(t.id)?[]:[t]);
+      S.push([{...mk(state),legend:leg,text:`Los ${g.length} términos semejantes se convierten en uno solo: ${m(termL(sum,e))}.`}]);
+      state=state.map(t=>({k:'term',id:t.id,c:t.c,e:t.e,col:t.col}));
+    }
+  }
+  const singles=exps.filter(e=>cnt(e)===1);
+  if(hasLike&&singles.length){
+    const sg=state.filter(t=>singles.includes(t.e));
+    S.push([{...mk(state.map(t=>singles.includes(t.e)?{...t,act:true}:dm(t))),legend:leg,
+      text:`${listY(sg.map(t=>m(termL(t.c,t.e))))} ${sg.length>1?'no tienen semejantes: se quedan':'no tiene semejantes: se queda'} igual.`}]);
+  }
+  const deg=state.length?Math.max(...state.map(t=>t.e)):null;
+  S.push([{...mk(state.length?state.map(t=>({...t,col:false,res:true})):[tO('zero','0',{res:true})]),
+    text:`Resultado: ${m(polyH(state))}.${deg!==null?` Es un polinomio de grado ${deg}.`:''}`}]);
+}
+
+/* ---------- Pasos: suma y resta ---------- */
+function buildAddSub(ex,resta){
+  const S=[],sym=resta?MINUS:'+';
+  const L0=tL('lab',`P(x) ${sym} Q(x) =`);
+  const pT=ex.P.map((t,i)=>tT('p'+i,t)),qT=ex.Q.map((t,i)=>tT('q'+i,t));
+  const full=(o={})=>[L0,tP('pa','('),...pT,tP('pb',')'),tO('op',sym,o.op),tP('qa','(',o.par),...(o.q||qT),tP('qb',')',o.par)];
+  S.push([{rows:[row(full())],text:resta
+    ?`Calculamos ${b('P(x) − Q(x)')}. Escribimos cada polinomio entre paréntesis. Fíjate en el signo ${m(MINUS)} que hay delante del paréntesis de Q(x).`
+    :`Calculamos ${b('P(x) + Q(x)')}. Escribimos cada polinomio entre paréntesis.`}]);
+  let cur;
+  if(!resta){
+    cur=[...pT,...qT];
+    S.push([{rows:[row([L0,...cur])],text:`Un ${m('+')} delante de un paréntesis no cambia nada: quitamos los paréntesis y cada término conserva su signo.`}]);
+  }else{
+    const qB=qT.map((t,i)=>({...t,act:true,badge:MINUS,bi:i}));
+    const f1={rows:[row(full({op:{act:true},par:{act:true},q:qB}))],text:`El signo ${m(MINUS)} afecta a ${b('todo el paréntesis')}: multiplica a cada uno de sus términos, no solo al primero.`};
+    const qN=qT.map(t=>({...t,c:t.c.neg(),flip:true}));
+    const ch=qT.map(t=>`${termS(t.c,t.e)} → ${termS(t.c.neg(),t.e)}`).join('<span class="gapn"></span>');
+    const f2={rows:[row([L0,...pT,...qN]),notes(tN('nch',`<span class="nlab">cambio de signo</span>${ch}`))],text:`Quitamos el paréntesis ${b('cambiando el signo de todos sus términos')}: lo que era positivo pasa a negativo y lo que era negativo pasa a positivo.`};
+    S.push([f1,f2]);
+    cur=qN.map(t=>({k:'term',id:t.id,c:t.c,e:t.e}));
+    cur=[...pT,...cur];
+  }
+  combineFlow(S,cur,{lead:[L0]});
+  return S;
+}
+
+/* ---------- Pasos: multiplicación ---------- */
+function buildMul(ex,expand){
+  const S=[],A=ex.A,B=ex.B;
+  const aT=A.map((t,i)=>tT('a'+i,t)),bT=B.map((t,i)=>tT('b'+i,t));
+  const r1=(fa=t=>t,fb=t=>t)=>row([tP('pa','('),...aT.map(fa),tP('pb',')'),tO('x','·'),tP('qa','('),...bT.map(fb),tP('qb',')')]);
+  if(A.length===1&&B.length===1){
+    const a=A[0],c=B[0],p=a.c.mul(c.c),e=a.e+c.e;
+    const cExpr=`${numS(a.c)} · ${numS(c.c,true)} = ${numS(p)}`;
+    const nc=tN('nc',`<span class="nlab">coeficientes</span>${cExpr}`);
+    const ne=tN('ne',`<span class="nlab">parte literal</span>${expMulNote(a.e,c.e,expand)}`);
+    const hc=t=>({...t,act:true,hl:'co',showOne:true}),hx=t=>({...t,act:true,hl:'li',showExp1:true});
+    S.push([{rows:[r1()],text:`Multiplicamos dos monomios en dos partes: primero los números (los ${b('coeficientes')}) y después las ${m('x')} (la ${b('parte literal')}).`}]);
+    S.push([{rows:[r1(hc,hc),notes(nc)],legend:ROLES,text:`Multiplicamos los coeficientes, con su signo: ${m(cExpr)}. ${signRule(a.c,c.c)}`}]);
+    S.push([{rows:[r1(hx,hx),notes(nc),notes(ne)],legend:ROLES,text:expMulText(a.e,c.e)}]);
+    S.push([{rows:[r1(),row([tO('eq','='),{k:'term',id:'r',c:p,e,res:true,absorb:['nc','ne']}])],text:`Juntamos el número y la parte literal. Resultado: ${m(termL(p,e))}.`}]);
+    return S;
+  }
+  const n=A.length*B.length;
+  S.push([{rows:[r1()],text:`Para multiplicar usamos la ${b('propiedad distributiva')}: cada término del primer paréntesis multiplica a cada término del segundo.`}]);
+  const arr=[];aT.forEach(a=>bT.forEach(c=>arr.push({a:a.id,b:c.id})));
+  S.push([{rows:[r1()],arrows:arr,text:`${A.length===1?'Un término':A.length+' términos'} por ${B.length} términos: habrá ${m(`${A.length} · ${B.length} = ${n}`)} productos.`}]);
+  const prods=[];
+  A.forEach((a,i)=>B.forEach((c,j)=>{
+    const p=a.c.mul(c.c),e=a.e+c.e,id=`m${i}${j}`;
+    prods.push({k:'term',id,c:p,e});
+    S.push([{rows:[r1(t=>t.id==='a'+i?hlAll(t):dm(t),t=>t.id==='b'+j?hlAll(t):dm(t)),
+        row([tO('eq','='),...prods.map((t,k)=>k===prods.length-1?{...t,act:true}:t)]),
+        notes(tN(`n${i}${j}c`,`<span class="nlab">coeficientes</span>${numS(a.c)} · ${numS(c.c,true)} = ${numS(p)}`),tN(`n${i}${j}e`,`<span class="nlab">exponentes</span>${expMulNote(a.e,c.e,expand)}`))],
+      arrows:[{a:'a'+i,b:'b'+j,hot:true}],legend:ROLES,
+      text:`${m(termL(a.c,a.e))} por ${m(termL(c.c,c.e))}: multiplicamos los coeficientes y ${b('sumamos los exponentes')}. Sale ${m(termL(p,e))}.`}]);
+  }));
+  combineFlow(S,prods,{pre:[r1()],lead:[tO('eq','=')],noLike:'Ya tenemos todos los productos. No hay términos semejantes: no hay nada que agrupar.'});
+  return S;
+}
+
+/* ---------- Pasos: división ---------- */
+function buildDiv(ex,expand){
+  const S=[],P=ex.P,d=ex.D;
+  const pT=P.map((t,i)=>tT('p'+i,t)),dT=tT('d0',d);
+  const r1=(fp=t=>t,fd=t=>t)=>row([tP('pa','('),...pT.map(fp),tP('pb',')'),tO('dv',':'),tP('qa','('),fd(dT),tP('qb',')')]);
+  const dH=termL(d.c,d.e);
+  if(P.length===1){
+    const a=P[0],q=a.c.div(d.c),e=a.e-d.e;
+    const nc=tN('nc',`<span class="nlab">coeficientes</span>${coefDivNote(a.c,d.c)}`);
+    const ne=tN('ne',`<span class="nlab">parte literal</span>${expDivNote(a.e,d.e,expand)}`);
+    const hc=t=>({...t,act:true,hl:'co',showOne:true}),hx=t=>({...t,act:true,hl:'li',showExp1:true});
+    S.push([{rows:[r1()],text:`Dividimos dos monomios en dos partes: primero los ${b('coeficientes')} y después la ${b('parte literal')}.`}]);
+    S.push([{rows:[r1(hc,hc),notes(nc)],legend:ROLES,text:`Dividimos los coeficientes, con su signo: ${m(coefDivNote(a.c,d.c))}. ${signRule(a.c,d.c,':')}`}]);
+    S.push([{rows:[r1(hx,hx),notes(nc),notes(ne)],legend:ROLES,text:`Dividimos las partes literales. Son potencias de la misma base, así que ${b('se restan los exponentes')}: ${m(`${a.e} ${MINUS} ${d.e} = ${e}`)}.${e===0?` Como los exponentes son iguales, ${m('x'+sup(0)+' = 1')}: la ${m('x')} desaparece.`:''}`}]);
+    S.push([{rows:[r1(),row([tO('eq','='),{k:'term',id:'r',c:q,e,res:true,absorb:['nc','ne']}])],text:`Juntamos el número y la parte literal. Resultado: ${m(termL(q,e))}.`}]);
+    return S;
+  }
+  S.push([{rows:[r1()],text:`Para dividir un polinomio entre un monomio, ${b('dividimos cada término')} del polinomio entre el monomio.`}]);
+  S.push([{rows:[r1()],arrows:pT.map(t=>({a:'d0',b:t.id})),text:`El monomio ${m(dH)} divide a los ${P.length} términos: haremos ${P.length} divisiones.`}]);
+  const qs=[];
+  P.forEach((a,i)=>{
+    const q=a.c.div(d.c),e=a.e-d.e;
+    qs.push({k:'term',id:'q'+i,c:q,e});
+    S.push([{rows:[r1(t=>t.id==='p'+i?hlAll(t):dm(t),hlAll),
+        row([tO('eq','='),...qs.map((t,k)=>k===qs.length-1?{...t,act:true}:t)]),
+        notes(tN(`n${i}c`,`<span class="nlab">coeficientes</span>${coefDivNote(a.c,d.c)}`),tN(`n${i}e`,`<span class="nlab">exponentes</span>${expDivNote(a.e,d.e,expand)}`))],
+      arrows:[{a:'d0',b:'p'+i,hot:true}],legend:ROLES,
+      text:`${m(termL(a.c,a.e))} : ${m(dH)}. Dividimos los coeficientes${q.int?'':' (no es exacta, así que queda una fracción simplificada)'} y ${b('restamos los exponentes')}. Sale ${m(termL(q,e))}.${e===0?` Los exponentes son iguales: ${m('x'+sup(0)+' = 1')}, la ${m('x')} desaparece.`:''}`}]);
+  });
+  S.push([{rows:[r1(),row([tO('eq','='),...qs.map(t=>({...t,res:true}))])],text:`Resultado: ${m(polyH(qs))}.`}]);
+  return S;
+}
+
+/* ---------- Pasos: factorización (factor común) ---------- */
+function buildFactor(ex){
+  const S=[],P=ex.P,K=ex.k,M=ex.m,Rr=ex.inner;
+  const fac={c:f(K),e:M},facH=termL(fac.c,fac.e);
+  const L0=tL('lab','P(x) =');
+  const pT=P.map((t,i)=>tT('p'+i,t));
+  S.push([{rows:[row([L0,...pT])],text:`Sacar factor común es buscar lo que se repite en ${b('todos')} los términos y escribirlo delante, multiplicando a un paréntesis.`}]);
+  const abs=P.map(t=>t.c.abs().n);
+  const nm=tN('nm',`<span class="nlab">números</span>MCD(${abs.join(', ')}) = ${K}`);
+  const nd=K>1?tN('nd',abs.map(a=>`${a} = ${K}·${a/K}`).join('<span class="gapn"></span>')):null;
+  S.push([{rows:[row([L0,...pT.map(t=>({...t,act:true,hl:'co',showOne:true}))]),notes(nm,nd)],legend:ROLES,
+    text:K>1?`Primero los números: buscamos el mayor número que divide a todos los coeficientes, sin mirar el signo. El ${b('MCD')} de ${listY(abs.map(String))} es ${m(K)}.`
+            :`Primero los números: el ${b('MCD')} de ${listY(abs.map(String))} es ${m(1)}. No hay ningún número común que sacar.`}]);
+  const ct=P.find(t=>t.e===0);
+  const nx=tN('nx',ct?`<span class="nlab">parte literal</span>hay un término sin x → la x no es común`
+                     :`<span class="nlab">parte literal</span>${P.map(t=>litH(t.e,true)).join(', ')} → menor exponente: ${M} → ${litH(M,true)}`);
+  S.push([{rows:[row([L0,...pT.map(t=>({...t,act:true,hl:'li',showExp1:true}))]),notes(nm),notes(nx)],legend:ROLES,
+    text:ct?`Ahora las ${m('x')}: hay un término sin ${m('x')} (${m(termL(ct.c,ct.e))}), así que la ${m('x')} no está en todos y no se puede sacar.`
+           :`Ahora las ${m('x')}: está en todos los términos. Se saca la ${m('x')} con el ${b('menor exponente')}: ${m(litH(M,true))}.`}]);
+  const nf=tN('nf',`<span class="nlab">factor común</span><span class="lim">${facH}</span>`);
+  S.push([{rows:[row([L0,...pT]),notes(nf)],
+    text:`El factor común es ${m(facH)}${K>1&&M>0?`: el MCD (${m(K)}) por la ${m('x')} con el menor exponente (${m(litH(M,true))})`:''}.`}]);
+  const it4=[L0];
+  P.forEach((t,i)=>{if(i>0)it4.push(tO('s'+i,'+'));it4.push({k:'term',id:'f'+i,...fac,fac:true},tO('d'+i,'·'),{k:'term',id:'p'+i,c:Rr[i].c,e:Rr[i].e,wrapNeg:true})});
+  const one=Rr.some(r=>r.e===0&&r.c.abs().one);
+  S.push([{rows:[row(it4),notes(...P.map((t,i)=>tN('nq'+i,`${termL(t.c,t.e)} : ${facH} = ${termL(Rr[i].c,Rr[i].e)}`)))],
+    text:`Escribimos cada término como ${m(facH)} multiplicado por lo que queda. Lo que queda sale de ${b('dividir cada término')} entre ${m(facH)}.${one?` Cuando un término es igual al factor común, queda ${m('1')}, no ${m('0')}.`:''}`}]);
+  const it5=[L0,{k:'term',id:'f0',...fac,fac:true,absorb:P.slice(1).map((_,i)=>'f'+(i+1))},tP('pa','('),...Rr.map((r,i)=>({k:'term',id:'p'+i,c:r.c,e:r.e})),tP('pb',')')];
+  S.push([{rows:[row(it5)],text:`Sacamos el factor común ${b('delante')} y dentro del paréntesis dejamos lo que queda de cada término.`}]);
+  const chk=P.map((t,i)=>`${facH} · ${termInner(Rr[i].c,Rr[i].e,{wrapNeg:true})} = ${termL(t.c,t.e)}`).join('<span class="gapn"></span>');
+  S.push([{rows:[row(it5.map(t=>({...t,absorb:null,res:t.k==='term'}))),notes(tN('nc',`<span class="nlab">comprobación</span>${chk}`)),notes(tN('ok',`${polyH(P)} <span class="okm">✓</span>`))],
+    text:`Comprobación: multiplicamos ${m(facH)} por cada término del paréntesis y vuelve a salir P(x). Resultado: ${m(`${facH}(${polyH(Rr)})`)}.`}]);
+  return S;
+}
+
+/* ---------- Lectura de respuestas ---------- */
+const SUPS='⁰¹²³⁴⁵⁶⁷⁸⁹';
+function parseDec(s){if(!/^\d+(\.\d+)?$/.test(s))return null;if(!s.includes('.'))return new F(parseInt(s,10));const [i,d]=s.split('.');return new F(parseInt(i+d,10),10**d.length)}
+function parseNum(s){if(s.includes('/')){const [a,c]=s.split('/');const fa=parseDec(a),bb=parseInt(c,10);if(!fa||!bb)return null;return fa.div(new F(bb))}return parseDec(s)}
+function parsePoly(str){
+  let s=String(str).replace(/\s+/g,'').replace(/[−–—]/g,'-').replace(/X/g,'x').replace(/,/g,'.');
+  s=s.replace(/[⁰¹²³⁴⁵⁶⁷⁸⁹]+/g,mm=>'^'+[...mm].map(ch=>SUPS.indexOf(ch)).join(''));
+  s=s.replace(/\((\d+(?:\.\d+)?\/\d+)\)/g,'$1').replace(/^\((.*)\)$/,'$1').replace(/[·*]/g,'');
+  if(!s)return null;
+  if(!/^[+-]/.test(s))s='+'+s;
+  const re=/([+-])(\d+(?:\.\d+)?(?:\/\d+)?)?(x(?:\^?(\d+))?)?/y;
+  const mp=new Map();let pos=0;
+  while(pos<s.length){
+    re.lastIndex=pos;const mt=re.exec(s);
+    if(!mt||(!mt[2]&&!mt[3]))return null;
+    pos=re.lastIndex;
+    let c=mt[2]?parseNum(mt[2]):new F(1);if(!c)return null;
+    if(mt[1]==='-')c=c.neg();
+    const e=mt[3]?(mt[4]?parseInt(mt[4],10):1):0;
+    mp.set(e,(mp.get(e)||new F(0)).add(c));
+  }
+  for(const [k,v] of mp)if(v.zero)mp.delete(k);
+  return mp;
+}
+function diagnose(op,ex,mp){
+  if(op==='resta'){
+    if(eqMap(mp,toMap(addP(ex.P,ex.Q))))return 'Has sumado Q(x) en lugar de restarlo: el − cambia el signo de todos sus términos.';
+    const Q1=ex.Q.map((t,i)=>i===0?{c:t.c.neg(),e:t.e}:t);
+    if(eqMap(mp,toMap(addP(ex.P,Q1))))return 'Solo has cambiado el signo del primer término de Q(x). El − afecta a todo el paréntesis.';
+  }
+  if(op==='suma'||op==='resta'){
+    const Qs=op==='resta'?ex.Q.map(t=>({c:t.c.neg(),e:t.e})):ex.Q;
+    const all=[...ex.P,...Qs];const mp2=new Map();
+    const exps=[...new Set(all.map(t=>t.e))];
+    exps.forEach(e=>{const g=all.filter(t=>t.e===e);const c=g.reduce((s,t)=>s.add(t.c),new F(0));const ee=g.length>1?e*g.length:e;if(!c.zero)mp2.set(ee,(mp2.get(ee)||new F(0)).add(c))});
+    if(!eqMap(toMap(all),mp2)&&eqMap(mp,mp2))return 'Al sumar términos semejantes, el exponente no cambia: solo se suman los coeficientes.';
+  }
+  if(op==='mult'){
+    const w=toMap(ex.A.flatMap(a=>ex.B.map(c=>({c:a.c.mul(c.c),e:a.e*c.e}))));
+    if(eqMap(mp,w))return 'Has multiplicado los exponentes: al multiplicar potencias de la misma base, los exponentes se suman.';
+  }
+  if(op==='div'&&ex.P.every(t=>t.e%ex.D.e===0)){
+    const w=toMap(ex.P.map(t=>({c:t.c.div(ex.D.c),e:t.e/ex.D.e})));
+    if(eqMap(mp,w))return 'Has dividido los exponentes: al dividir potencias de la misma base, los exponentes se restan.';
+  }
+  return null;
+}
+// ==UI==
+</script>
+<script>
+"use strict";
+/* ---------- Iconos 8 bits ---------- */
+function pxSvg(rows,cls){
+  const h=rows.length,w=rows[0].length;let r='';
+  rows.forEach((s,y)=>[...s].forEach((ch,x)=>{if(ch==='#')r+=`<rect x="${x}" y="${y}" width="1.02" height="1.02"/>`;else if(ch==='f')r+=`<rect x="${x}" y="${y}" width="1.02" height="1.02" fill="#F472B6"/>`;else if(ch==='a')r+=`<rect x="${x}" y="${y}" width="1.02" height="1.02" fill="#FBBF24"/>`}));
+  return `<svg class="${cls}" viewBox="0 0 ${w} ${h}" aria-hidden="true" shape-rendering="crispEdges">${r}</svg>`;
+}
+const ICONS={
+  play:["#......","###....","#####..","#######","#####..","###....","#......"],
+  pause:["##.##","##.##","##.##","##.##","##.##","##.##","##.##"],
+  prev:["......#","....###","..#####","#######","..#####","....###","......#"],
+  reset:["..###.#",".#...##","#...###","#......","#.....#",".#...#.","..###.."],
+  dice:["#######","#.....#","#.#.#.#","#.....#","#.#.#.#","#.....#","#######"],
+  check:["......#",".....##","#...##.","##.##..",".###...","..#....","......."]
+};
+document.getElementById('logo').innerHTML=pxSvg([
+  ".......fff..",
+  ".........f..",
+  "a...a..fff..",
+  ".a.a...f....",
+  "..a....fff..",
+  ".a.a........",
+  "a...a.......",
+  "............"],'logo');
+document.querySelectorAll('[data-ico]').forEach(el=>{el.outerHTML=pxSvg(ICONS[el.dataset.ico],'ico')});
+
+/* ---------- Estado ---------- */
+const $=s=>document.querySelector(s);
+const stage=$('#stage'),rowsEl=$('#rows'),svg=$('#arrows'),ghosts=$('#ghosts');
+const reduceMotion=matchMedia('(prefers-reduced-motion: reduce)');
+const st={op:'suma',mode:'demo',level:'medio',speed:1,expand:false,ex:null,steps:[],idx:0,playing:false,revealed:false,timers:[],frame:null};
+let D=650;
+const OPS={
+  suma:{gen:l=>genAddSub(l,false),build:ex=>buildAddSub(ex,false)},
+  resta:{gen:l=>genAddSub(l,true),build:ex=>buildAddSub(ex,true)},
+  mult:{gen:genMul,build:(ex,x)=>buildMul(ex,x)},
+  div:{gen:genDiv,build:(ex,x)=>buildDiv(ex,x)},
+  fact:{gen:genFactor,build:ex=>buildFactor(ex)}
+};
+
+/* ---------- Motor de animación (FLIP) ---------- */
+function mkEl(t,lead){
+  const el=document.createElement('span');el.dataset.id=t.id;el.className='tk tk-'+t.k;
+  if(t.k==='term'){
+    el.innerHTML=termInner(t.c,t.e,{leading:lead,showOne:t.showOne,showExp1:t.showExp1,wrapNeg:t.wrapNeg});
+    if(t.col)el.classList.add('col','g'+Math.min(t.e,6));
+    if(t.hl)t.hl.split(' ').forEach(h=>el.classList.add('h-'+h));
+    if(t.fac)el.classList.add('fac');
+    if(t.flip)el.classList.add('flip');
+  }else if(t.k==='op'||t.k==='par')el.textContent=t.s;
+  else el.innerHTML=t.html;
+  if(t.act)el.classList.add('act');
+  if(t.dim)el.classList.add('dim');
+  if(t.res)el.classList.add('res');
+  if(t.badge){const bd=document.createElement('span');bd.className='badge';bd.textContent=t.badge;bd.style.setProperty('--i',t.bi||0);el.appendChild(bd)}
+  return el;
+}
+function render(frame,animate){
+  st.frame=frame;
+  const anim=animate&&!reduceMotion.matches;
+  const old=new Map();
+  rowsEl.querySelectorAll('[data-id]').forEach(el=>old.set(el.dataset.id,{r:el.getBoundingClientRect(),el,html:el.innerHTML}));
+  const sr=stage.getBoundingClientRect(),sl=stage.scrollLeft,stp=stage.scrollTop;
+  const frag=document.createDocumentFragment(),made=[];
+  frame.rows.forEach(rw=>{
+    const r=document.createElement('div');r.className='row '+(rw.cls||'');let prev=null;
+    rw.items.forEach(t=>{const lead=!(prev&&prev.k==='term');const el=mkEl(t,lead);r.appendChild(el);made.push([t,el]);prev=t});
+    frag.appendChild(r);
+  });
+  ghosts.getAnimations?.({subtree:true}).forEach(a=>a.cancel());
+  ghosts.replaceChildren();
+  rowsEl.replaceChildren(frag);
+  const nr=new Map();made.forEach(([t,el])=>nr.set(t.id,el.getBoundingClientRect()));
+  const sr2=stage.getBoundingClientRect();
+  drawArrows(frame.arrows||[],nr,sr2,anim);
+  if(!anim)return;
+  const ease='cubic-bezier(.22,.7,.2,1)';
+  made.forEach(([t,el])=>{
+    const o=old.get(t.id);
+    if(o){
+      const r=nr.get(t.id),dx=o.r.left-r.left,dy=o.r.top-r.top;
+      if(Math.abs(dx)>.5||Math.abs(dy)>.5)el.animate([{transform:`translate(${dx}px,${dy}px)`},{transform:'none'}],{duration:D,easing:ease});
+      if(o.html!==el.innerHTML&&!t.flip)el.animate([{opacity:.2},{opacity:1}],{duration:D*.9,easing:'ease-out'});
+    }else{
+      el.animate([{opacity:0,transform:'translateY(.45em) scale(.9)'},{opacity:1,transform:'none'}],{duration:D*.8,delay:D*.45,easing:ease,fill:'backwards'});
+    }
+  });
+  const absorbBy=new Map();made.forEach(([t])=>(t.absorb||[]).forEach(id=>absorbBy.set(id,t.id)));
+  old.forEach((o,id)=>{
+    if(nr.has(id))return;
+    const g=o.el.cloneNode(true);g.removeAttribute('data-id');g.classList.add('ghost');
+    g.style.left=(o.r.left-sr.left+sl)+'px';g.style.top=(o.r.top-sr.top+stp)+'px';g.style.width=o.r.width+'px';g.style.height=o.r.height+'px';
+    ghosts.appendChild(g);
+    const tid=absorbBy.get(id);let kf;
+    if(tid&&nr.has(tid)){
+      const r=nr.get(tid),dx=(r.left+r.width/2)-(o.r.left+o.r.width/2),dy=(r.top+r.height/2)-(o.r.top+o.r.height/2);
+      kf=[{transform:'none',opacity:1},{transform:`translate(${dx}px,${dy}px) scale(.55)`,opacity:0}];
+    }else kf=[{opacity:1,transform:'none'},{opacity:0,transform:'translateY(-.5em) scale(.9)'}];
+    g.animate(kf,{duration:D,easing:ease,fill:'forwards'}).onfinish=()=>g.remove();
+  });
+}
+function drawArrows(list,nr,sr,anim){
+  svg.replaceChildren();
+  if(!list.length){svg.setAttribute('width',0);svg.setAttribute('height',0);return}
+  const W=stage.scrollWidth,H=stage.scrollHeight;
+  svg.setAttribute('width',W);svg.setAttribute('height',H);svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
+  const NS='http://www.w3.org/2000/svg';
+  const defs=document.createElementNS(NS,'defs');
+  defs.innerHTML='<marker id="ahHot" viewBox="0 0 8 8" refX="6" refY="4" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L8,4 L0,8 z" fill="#FEF08A"/></marker><marker id="ahCold" viewBox="0 0 8 8" refX="6" refY="4" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L8,4 L0,8 z" fill="#6B6285"/></marker>';
+  svg.appendChild(defs);
+  const ox=-sr.left+stage.scrollLeft,oy=-sr.top+stage.scrollTop;
+  list.forEach((a,k)=>{
+    const ra=nr.get(a.a),rb=nr.get(a.b);if(!ra||!rb)return;
+    const x1=ra.left+ra.width/2+ox,y1=ra.top+oy+3,x2=rb.left+rb.width/2+ox,y2=rb.top+oy+1;
+    const lift=Math.min(16+Math.abs(x2-x1)*.13,64)+(a.hot?0:(k%3)*7);
+    const cy=Math.max(4,Math.min(y1,y2)-lift);
+    const p=document.createElementNS(NS,'path');
+    p.setAttribute('d',`M${x1},${y1} Q${(x1+x2)/2},${cy} ${x2},${y2}`);
+    p.setAttribute('fill','none');p.setAttribute('stroke',a.hot?'#FEF08A':'#6B6285');
+    p.setAttribute('stroke-width',a.hot?2.2:1.6);p.setAttribute('stroke-linecap','round');
+    p.setAttribute('marker-end',`url(#${a.hot?'ahHot':'ahCold'})`);
+    svg.appendChild(p);
+    if(anim){
+      const L=p.getTotalLength();p.style.strokeDasharray=L;
+      p.animate([{strokeDashoffset:L,opacity:0},{strokeDashoffset:L,opacity:1,offset:.05},{strokeDashoffset:0,opacity:1}],{duration:D*1.2,delay:D*.4+k*80,fill:'backwards',easing:'ease-out'});
+    }
+  });
+}
+
+/* ---------- Textos y controles ---------- */
+const degName=e=>e===0?'número':e===1?'x':'x'+sup(e);
+function setFrameText(fr){
+  $('#text').innerHTML=fr.text||'';
+  const lg=fr.legend,el=$('#legend');let h='';
+  if(lg&&lg.deg)h+=lg.deg.map(e=>`<span class="lg g${Math.min(e,6)}">${degName(e)}</span>`).join('');
+  if(lg&&lg.deg&&lg.roles)h+='<span class="lsep"></span>';
+  if(lg&&lg.roles)h+='<span class="lg c-fu">coeficiente</span><span class="lg c-me">parte literal / exponente</span><span class="lg c-li">en juego</span>';
+  el.innerHTML=h;
+}
+function updateUI(){
+  const n=st.steps.length,practiceHidden=st.mode==='prac'&&!st.revealed;
+  $('#stepLbl').textContent=practiceHidden?'PRÁCTICA':`PASO ${st.idx+1}/${n}`;
+  $('#btnPrev').disabled=st.idx===0;
+  $('#btnNext').disabled=st.idx>=n-1;
+  $('#playLbl').textContent=st.playing?'PAUSA':(st.idx>=n-1?'REPETIR':'REPRODUCIR');
+  $('#btnPlay').querySelector('svg').outerHTML=pxSvg(ICONS[st.playing?'pause':'play'],'ico');
+  $('#prog').innerHTML=st.steps.map((_,i)=>`<i class="${i<st.idx?'done':i===st.idx?'now':''}"></i>`).join('');
+  $('#ctrl').hidden=practiceHidden;
+}
+const subGap=()=>D*1.5+1100/st.speed;
+const hold=()=>D+2700/st.speed;
+function clearTimers(){st.timers.forEach(clearTimeout);st.timers=[]}
+function goStep(i,anim=true){
+  clearTimers();
+  const prev=st.idx;st.idx=i;
+  const frames=st.steps[i];
+  if(anim&&i===prev+1&&frames.length>1){
+    render(frames[0],true);setFrameText(frames[0]);
+    frames.slice(1).forEach((fr,k)=>st.timers.push(setTimeout(()=>{render(fr,true);setFrameText(fr)},(k+1)*subGap())));
+  }else{const fr=frames[frames.length-1];render(fr,anim);setFrameText(fr)}
+  updateUI();
+  if(st.playing)schedule();
+}
+function schedule(){
+  const frames=st.steps[st.idx];
+  st.timers.push(setTimeout(()=>{
+    if(st.idx<st.steps.length-1)goStep(st.idx+1);
+    else{st.playing=false;updateUI()}
+  },(frames.length-1)*subGap()+hold()));
+}
+function play(){
+  if(st.playing){st.playing=false;clearTimers();const fr=st.steps[st.idx];const last=fr[fr.length-1];if(st.frame!==last){render(last,false);setFrameText(last)}updateUI();return}
+  st.playing=true;
+  if(st.idx>=st.steps.length-1){st.idx=-1;goStep(0,false);}
+  else{updateUI();schedule()}
+}
+function stop(){st.playing=false;clearTimers()}
+
+function stmtHTML(op,ex){
+  if(op==='suma'||op==='resta')return `<span><span class="dl">P(x) =</span>${polyH(ex.P)}</span><span><span class="dl">Q(x) =</span>${polyH(ex.Q)}</span><span class="task">Calcula ${b(op==='suma'?'P(x) + Q(x)':'P(x) − Q(x)')}</span>`;
+  if(op==='mult')return `<span>(${polyH(ex.A)}) · (${polyH(ex.B)})</span><span class="task">Calcula el ${b('producto')}</span>`;
+  if(op==='div')return `<span>(${polyH(ex.P)}) : (${polyH([ex.D])})</span><span class="task">Calcula el ${b('cociente')}</span>`;
+  return `<span><span class="dl">P(x) =</span>${polyH(ex.P)}</span><span class="task">Saca ${b('factor común')}</span>`;
+}
+function rebuild(keepIdx){
+  const o=OPS[st.op];
+  st.steps=o.build(st.ex,st.expand);
+  st.idx=keepIdx?Math.min(st.idx,st.steps.length-1):0;
+  const fr=st.steps[st.idx];const last=fr[fr.length-1];
+  render(last,false);
+  if(st.mode==='prac'&&!st.revealed){$('#text').innerHTML='Resuelve el ejercicio en tu cuaderno, escribe el resultado y pulsa <b>Comprobar</b>. Si te atascas, pulsa <b>Ver solución</b>.';$('#legend').innerHTML=''}
+  else setFrameText(last);
+  updateUI();
+}
+function newExercise(){
+  stop();
+  st.ex=OPS[st.op].gen(st.level);
+  st.revealed=false;
+  $('#stmt').innerHTML=stmtHTML(st.op,st.ex);
+  $('#kind').textContent=st.ex.kind;
+  resetPractice();
+  rebuild(false);
+}
+function resetPractice(){
+  const pr=st.mode==='prac';
+  $('#prac').hidden=!pr;
+  const fact=st.op==='fact';
+  $('#ansPoly').hidden=!pr||fact;$('#ansFact').hidden=!pr||!fact;
+  ['#ans','#fac','#inn'].forEach(s=>$(s).value='');
+  $('#keys').hidden=false;$('#btnCheck').hidden=false;$('#btnShow').hidden=false;$('#btnAgain').hidden=true;
+  $('#fb').textContent='';$('#fb').className='fb';
+}
+function reveal(){
+  st.revealed=true;
+  $('#ansPoly').hidden=true;$('#ansFact').hidden=true;$('#keys').hidden=true;$('#btnCheck').hidden=true;$('#btnShow').hidden=true;$('#btnAgain').hidden=false;
+  st.idx=0;goStep(0,false);
+  st.playing=true;updateUI();schedule();
+}
+function feedback(html,ok){const el=$('#fb');el.innerHTML=html;el.className='fb '+(ok?'ok':'no')}
+function check(){
+  const op=st.op,ex=st.ex;
+  if(op==='fact'){
+    const fRaw=$('#fac').value,iRaw=$('#inn').value;
+    if(!fRaw.trim()||!iRaw.trim()){feedback('Escribe el factor común en la primera casilla y lo que queda dentro del paréntesis en la segunda.',false);return}
+    const fm=parsePoly(fRaw),im=parsePoly(iRaw);
+    if(!fm||!im||fm.size!==1){feedback('No entiendo lo que has escrito. El factor común es un solo monomio, por ejemplo <span>6x^2</span>.',false);return}
+    const [[fe,fc]]=[...fm];
+    const prod=toMap(fromMap(im).map(t=>({c:t.c.mul(fc),e:t.e+fe})));
+    const okProd=eqMap(prod,toMap(ex.P)),isMax=fe===ex.m&&fc.abs().eq(f(ex.k));
+    if(okProd&&isMax){feedback('✓ ¡Correcto!'+(fc.n<0?' <span>Has sacado el factor con signo menos: también es válido.</span>':''),true);return}
+    if(okProd){feedback('✗ Casi. <span>Está bien multiplicado, pero no es el mayor factor común: todavía se puede sacar más.</span>',false);return}
+    if(isMax){feedback('✗ No es correcto. <span>El factor común está bien. Revisa lo que queda dentro del paréntesis: divide cada término entre el factor común.</span>',false);return}
+    feedback('✗ No es correcto. <span>Revisa el factor común: es el MCD de los coeficientes por la x con el menor exponente.</span>',false);return;
+  }
+  const raw=$('#ans').value;
+  if(!raw.trim()){feedback('Escribe tu respuesta antes de comprobar.',false);return}
+  const mp=parsePoly(raw);
+  if(!mp){feedback('No entiendo lo que has escrito. Escribe los términos así: <span>3x^2 − 5x + 1</span>. Puedes usar los botones de abajo.',false);return}
+  const exp=toMap(st.ex.ans);
+  if(eqMap(mp,exp)){feedback('✓ ¡Correcto!',true);return}
+  const dg=diagnose(op,ex,mp);
+  if(dg){feedback(`✗ No es correcto. <span>${dg}</span>`,false);return}
+  const good=[...exp].filter(([e,c])=>mp.has(e)&&mp.get(e).eq(c)).length;
+  feedback(`✗ No es correcto. <span>Tienes bien ${good} de ${exp.size} ${exp.size===1?'término':'términos'}.</span>`,false);
+}
+
+/* ---------- Teclado de ayuda ---------- */
+let lastInput=null;
+['#ans','#fac','#inn'].forEach(s=>{const el=$(s);el.addEventListener('focus',()=>lastInput=el);el.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();check()}})});
+['x','^','²','³','⁴','/','+','−','(',')'].forEach(k=>{
+  const bt=document.createElement('button');bt.className='key';bt.type='button';bt.textContent=k;
+  bt.addEventListener('mousedown',e=>e.preventDefault());
+  bt.addEventListener('click',()=>{
+    const el=(lastInput&&!lastInput.closest('[hidden]'))?lastInput:(st.op==='fact'?$('#fac'):$('#ans'));
+    const s=el.selectionStart??el.value.length,e2=el.selectionEnd??el.value.length;
+    el.value=el.value.slice(0,s)+k+el.value.slice(e2);el.focus();el.setSelectionRange(s+k.length,s+k.length);
+  });
+  $('#keys').appendChild(bt);
+});
+
+/* ---------- Eventos ---------- */
+function setPressed(seg,v){seg.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x.dataset.v===v))}
+function selectTab(op){
+  st.op=op;
+  document.querySelectorAll('.tab').forEach(t=>{t.setAttribute('aria-selected',t.dataset.op===op);t.tabIndex=t.dataset.op===op?0:-1});
+  $('#togExp').hidden=!(op==='mult'||op==='div');
+  newExercise();
+}
+document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>selectTab(t.dataset.op)));
+$('.tabs').addEventListener('keydown',e=>{
+  if(e.key!=='ArrowRight'&&e.key!=='ArrowLeft')return;
+  const tabs=[...document.querySelectorAll('.tab')],i=tabs.findIndex(t=>t.dataset.op===st.op);
+  const n=tabs[(i+(e.key==='ArrowRight'?1:tabs.length-1))%tabs.length];n.focus();selectTab(n.dataset.op);e.stopPropagation();
+});
+$('#segMode').addEventListener('click',e=>{const bt=e.target.closest('button');if(!bt)return;st.mode=bt.dataset.v;setPressed($('#segMode'),st.mode);newExercise()});
+$('#segLevel').addEventListener('click',e=>{const bt=e.target.closest('button');if(!bt)return;st.level=bt.dataset.v;setPressed($('#segLevel'),st.level);newExercise()});
+$('#btnNew').addEventListener('click',newExercise);
+$('#btnAgain').addEventListener('click',newExercise);
+$('#chkExp').addEventListener('change',e=>{st.expand=e.target.checked;stop();rebuild(true)});
+$('#spd').addEventListener('input',e=>{
+  st.speed=parseFloat(e.target.value);D=650/st.speed;
+  document.documentElement.style.setProperty('--dur',D+'ms');
+  $('#spdV').textContent=st.speed.toFixed(2).replace('.',',')+'×';
+});
+$('#btnPrev').addEventListener('click',()=>{stop();if(st.idx>0)goStep(st.idx-1,true)});
+$('#btnNext').addEventListener('click',()=>{stop();if(st.idx<st.steps.length-1)goStep(st.idx+1,true)});
+$('#btnReset').addEventListener('click',()=>{stop();goStep(0,true)});
+$('#btnPlay').addEventListener('click',play);
+$('#btnCheck').addEventListener('click',check);
+$('#btnShow').addEventListener('click',reveal);
+document.addEventListener('keydown',e=>{
+  if(e.target.closest('input,textarea,.tabs'))return;
+  if(st.mode==='prac'&&!st.revealed)return;
+  if(e.key==='ArrowRight'&&st.idx<st.steps.length-1){stop();goStep(st.idx+1,true)}
+  else if(e.key==='ArrowLeft'&&st.idx>0){stop();goStep(st.idx-1,true)}
+});
+let rz;
+window.addEventListener('resize',()=>{clearTimeout(rz);rz=setTimeout(()=>{if(st.frame)render(st.frame,false)},150)});
+
+/* ---------- Arranque ---------- */
+setPressed($('#segMode'),st.mode);setPressed($('#segLevel'),st.level);
+const h=(location.hash||'').slice(1).toLowerCase();
+const alias={suma:'suma',resta:'resta',multiplicacion:'mult',mult:'mult',division:'div',div:'div',factorizacion:'fact',fact:'fact'};
+selectTab(alias[h]||'suma');
+if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>{if(st.frame)render(st.frame,false)});
+</script>
+
+</body></html>
